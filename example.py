@@ -1,4 +1,8 @@
 import efficiency
+import numpy as np
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 
 if __name__ == '__main__':
@@ -16,6 +20,8 @@ if __name__ == '__main__':
 
     #Here: a waveguide with core material AF32 glass (n=1.51) and cladding material SiO2 (n=1.465)
     waveguide1 = efficiency.SquaredWaveguide(1.51,1.465,50,1)
+    theta_deg = np.rad2deg(waveguide1.theta)
+    print(f"Waveguide's acceptance angle: theta = {theta_deg} deg")
 
     # create an instance of a laser diode.
 
@@ -40,11 +46,17 @@ if __name__ == '__main__':
     calc = efficiency.Calculator(waveguide1,laser1)
 
     # once we have the calculator instance we can calculate the coupling efficiency
-    n_geom = calc.geometrical_losses()
+    x = 0
+    wo_s, wo_f = laser1.calculate_beam_width(x)
+    print(f"Laser diode spot size at x = {x}: {wo_s} um * {wo_f} um ")
+
+    n_geom = calc.geometrical_losses(x)
     n_fresnel = calc.fresnel_losses()
     n_angular = calc.angular_losses()
+    n_total = calc.total_efficiency(x)
 
     # print the results
-    print(f"The geometrical factor for coupling efficiency is: {n_geom}")
+    print(f"The geometrical factor for coupling efficiency is: {n_geom} for x = {x}")
     print(f"The Fresnel factor for coupling efficiency is: {n_fresnel}")
     print(f"The angular factor for coupling efficiency is: {n_angular}")
+    print(f"The total coupling efficiency at x = {x} is: {n_total}")

@@ -4,7 +4,7 @@ import numpy as np
 # a = np.arange(15).reshape(3,5)
 # b = np.array([2,3,4])
 
-class Material:
+class Material(object):
 
     def __init__(self, name, n):
 
@@ -13,7 +13,7 @@ class Material:
 # Define the classes for the waveguide and the laser diode
 
 
-class SquaredWaveguide:
+class SquaredWaveguide(object):
     """
     A waveguide with a squared cross section.
 
@@ -32,24 +32,24 @@ class SquaredWaveguide:
         self.core_thickness = core_thickness
         self.clad_thickness = clad_thickness
         # calculate additional parameters
-        self.theta = self.get_acceptance_angle() # acceptance angle
+        self.theta = self.get_acceptance_angle()  # acceptance angle
 
     def get_acceptance_angle(self):
         # calculate numerical aperture
         na = np.sqrt(self.n_core**2 - self.n_clad**2)
         # derive acceptance angle from numerical aperture
-        theta = np.arcsin(na)
+        theta = np.arcsin(na)  # theta is in rad
         return theta
 
 
-class LaserDiode:
+class LaserDiode(object):
     """
     A laser diode object.
 
     class input attributes
     ----------------------
     Properties of the laser diode
-    lda: wavelength.
+    lda: wavelength. Units: nm
     fwhm_slow: Full width at half maximum on the slow axis. Units: deg
     fwhm_fast: Full width at half maximum on the fast axis. Units: deg
     width: width of the emitting surface. Units: um
@@ -61,14 +61,19 @@ class LaserDiode:
         self.lda = lda
         self.FWHM_slow = fwhm_slow
         self.FWHM_fast = fwhm_fast
+        # TODO change FWHM to rad units
         self.width = width
         self.height = height
         # calculate the emitting surface
         self.As = self.width * self.height
+        # calculate power distribution coefficients
         self.l_coefficient = self.get_power_distribution_coefficient(self.FWHM_slow)
         self.t_coefficient = self.get_power_distribution_coefficient(self.FWHM_fast)
+        # calculate gaussian beam parameters, half divergence, Rayleigh range and minimum half width
+        self.theta_slow, self.wo_slow, self.xo_slow = self.get_gaussian_beam_parameters(self.FWHM_slow)
+        self.theta_fast, self.wo_fast, self.xo_fast = self.get_gaussian_beam_parameters(self.FWHM_fast)
 
-    def get_power_distribution_coefficient(self,fwhm):
+    def get_power_distribution_coefficient(self, fwhm):
         """
         Calculate power distribution coefficient. This coefficient is later used in the expression of the radiance
         of laser diode. (Can be used for both the parallel and perpendicular coefficients).
@@ -84,53 +89,99 @@ class LaserDiode:
         m = np.floor(m)
         return m
 
-class Calculator:
+    def get_gaussian_beam_parameters(self, fwhm):
+        """
+        Calculate the beam minimum half width and half divergence angle from the FWHM.
+
+        :param fwhm:
+        :return:
+        theta: half divergence angle of the gaussian beam.
+        wo: beam minimum half width.
+        xo: Rayleigh range.
+        """
+        # change the unit of the fwhm angle from deg to rad
+        fwhm_rad = np.deg2rad(fwhm)
+
+        theta = (np.sqrt(2) * fwhm_rad) / (2 * np.log(2))
+        # change lambda from nm to um
+        lda_um = self.lda * 1e-3
+        wo = lda_um / (np.pi * theta)
+        xo = np.pi * wo ** 2 / lda_um
+        return theta, wo, xo
+
+    def calculate_beam_width(self, x):
+        """
+        Calculate the beam half width at a distance x from the origin
+
+        :param x: distance, with respect to the origin, when the beam half width is calculated
+        :return:
+        """
+        w_slow = self.wo_slow * np.sqrt(1 + (x / self.xo_slow) ** 2)
+        w_fast = self.wo_fast * np.sqrt(1 + (x / self.xo_fast) ** 2)
+        return w_slow, w_fast
+
+
+class Calculator(object):
     """
     Calculate coupling efficiency.
     """
+
+    # TODO - check for validity and units. (is a Waveguide is a LaserDiode)
     def __init__(self, waveguide, laserdiode):
         self.wv = waveguide
         self.ld = laserdiode
 
-    def geometrical_losses(self):
+    def geometrical_losses(self, x=0):
         """
-        Calculate geometrical losses. Depending on the relative size of the emitting area of the laser diode and the
-        cross-section of the waveguide.
+        Calculate the geometrical coupling efficiency factor when the waveguide is separated from the laser diode
+        by a distance of x.
+
+        :param x: distance of separation between the laser diode and the waveguide
         :return:
         n_geom: geometrical factor for coupling efficiency
         """
-        # TODO - make a input parameter to select between but coupling and a separated source. Or make separation
-        # the input parameter and make it 0 by default.
 
         # give shorter names to the useful variables
         wv_l = self.wv.core_thickness
-        ld_w = self.ld.width
-        ld_h = self.ld.height
+
+        if x == 0:  # if x = 0 then the geometrical losses are those of butt coupling.
+            ld_w = self.ld.width
+            ld_h = self.ld.height
+            ld_A = ld_h * ld_w
+        else:
+            ld_w, ld_h = self.ld.calculate_beam_width(x)
+            # in this case we calculate the area of the beam shape at the distance x. Note that the beam has an
+            # elliptical shape. Therefore, the area is given by pi*a*b, where a and b are the ellipse semi axis.
+            ld_A = np.pi * ld_h * ld_w
 
         if wv_l >= ld_w and wv_l >= ld_h:
             # if the source dimensions are smaller than the dimension of the waveguide core area,
-            # all the light will be couples into the fiber.
+            # all the light will be coupled into the fiber.
             n_geom = 1
 
-        if wv_l < ld_w and wv_l < ld_h:
+        elif wv_l < ld_w and wv_l < ld_h:
             # if the source is larger than the waveguide core area , the geometrical factor for coupling efficiency
-            # is given by the ratio of light captured by the fiber. The ratio of the areas.
-            n_geom = (wv_l ** 2) / (ld_h * ld_w)
+            # is given by the ratio of light captured by the fiber. The ratio of the areas. The area of
+            n_geom = (wv_l ** 2) / ld_A
 
-        if wv_l < ld_w and wv_l >= ld_h:
+        elif wv_l < ld_w and wv_l >= ld_h:
             # if the waveguide core area is larger than one side of the source, but smaller than the second side.
             # The geometrical factor for coupling efficiency is given by the following ratio
             n_geom = wv_l / ld_w
 
-        if wv_l >= ld_w and wv_l < ld_h:
+        elif wv_l >= ld_w and wv_l < ld_h:
             # if the waveguide core area is larger than one side of the source, but smaller than the second side.
             # The geometrical factor for coupling efficiency is given by the following ratio
             n_geom = wv_l / ld_h
+        else:
+            # TODO - make an exception. show an error message in this case
+            n_geom = 0
         return n_geom
 
     def fresnel_losses(self):
         """
-        Calculate Fresnel losses.
+        Calculate Fresnel coupling efficiency factor.
+
         :return:
         n_fresnel: Fresnel factor for coupling efficiency
         """
@@ -142,16 +193,33 @@ class Calculator:
 
     def angular_losses(self):
         """
-        Calculate angular losses (due to the spatial distribution of the power emitted by the source).
+        Calculate angular coupling efficiency factor
+        (due to the spatial distribution of the power emitted by the source).
+
         :return:
         """
         # get relevant parameters
         theta = self.wv.theta
-        l = self.ld.l_coefficient
+        k = self.ld.l_coefficient
         t = self.ld.t_coefficient
 
-        n_angular_l = 1 - (np.cos(theta)) ** (l + 1)
+        n_angular_l = 1 - (np.cos(theta)) ** (k + 1)
         n_angular_t = 1 - (np.cos(theta)) ** (t + 1)
 
         n_angular = np.sqrt(n_angular_l * n_angular_t)
         return n_angular
+
+    def total_efficiency(self, x):
+        """
+        Calculate the total efficiency for a separation between the laser diode and the waveguide of x.
+        Multiplies the results of the geometrical, fresnel and angular efficiency factors.
+
+        :param x: distance of separation between the laser diode and the waveguide
+        :return:
+        n: coupling efficiency
+        """
+        n_geom = self.geometrical_losses(x)
+        n_fresnel = self.fresnel_losses()
+        n_angular = self.angular_losses()
+        n_total = n_geom * n_fresnel * n_angular
+        return n_total
