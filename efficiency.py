@@ -1,9 +1,6 @@
 # Script to calculate coupling efficiency
 import numpy as np
 
-# a = np.arange(15).reshape(3,5)
-# b = np.array([2,3,4])
-
 class Material(object):
 
     def __init__(self, name, n):
@@ -56,16 +53,15 @@ class LaserDiode(object):
     height: height of the emitting surface. Units: um
     """
 
-    def __init__(self, lda, fwhm_slow, fwhm_fast, width, height):
+    def __init__(self, lda, fwhm_slow, fwhm_fast):
         # TODO - check for validity and units.
         self.lda = lda
         self.FWHM_slow = fwhm_slow
         self.FWHM_fast = fwhm_fast
-        # TODO change FWHM to rad units
-        self.width = width
-        self.height = height
-        # calculate the emitting surface
-        self.As = self.width * self.height
+        # self.width = width
+        # self.height = height
+        # # calculate the emitting surface
+        # self.As = self.width * self.height
         # calculate power distribution coefficients
         self.l_coefficient = self.get_power_distribution_coefficient(self.FWHM_slow)
         self.t_coefficient = self.get_power_distribution_coefficient(self.FWHM_fast)
@@ -143,16 +139,11 @@ class Calculator(object):
 
         # give shorter names to the useful variables
         wv_l = self.wv.core_thickness
-
-        if x == 0:  # if x = 0 then the geometrical losses are those of butt coupling.
-            ld_w = self.ld.width
-            ld_h = self.ld.height
-            ld_A = ld_h * ld_w
-        else:
-            ld_w, ld_h = self.ld.calculate_beam_width(x)
-            # in this case we calculate the area of the beam shape at the distance x. Note that the beam has an
-            # elliptical shape. Therefore, the area is given by pi*a*b, where a and b are the ellipse semi axis.
-            ld_A = np.pi * ld_h * ld_w
+        # calculate the area of the spot size at a distance x from the light source
+        ld_w, ld_h = self.ld.calculate_beam_width(x)
+        # Note that the beam has an elliptical shape. Therefore, the area is given by pi*a*b,
+        # where a and b are the ellipse semi axis.
+        ld_A = np.pi * ld_h * ld_w
 
         if wv_l >= ld_w and wv_l >= ld_h:
             # if the source dimensions are smaller than the dimension of the waveguide core area,
