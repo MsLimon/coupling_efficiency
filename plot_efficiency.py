@@ -47,9 +47,11 @@ if __name__ == '__main__':
     laser2 = ef.LaserDiode(980,13,30)
     # 650nm Red Laser Diode Chips for DVD
     laser3 = ef.LaserDiode(655,8,28)
+    # communications laser 1550nm wavelength
+    laser4 = ef.LaserDiode(1550,9,28)
 
     # make a list of the lasers so that we can iterate over them
-    lasers = [laser1, laser2, laser3]
+    lasers = [laser1, laser2, laser3, laser4]
 
     # generate a vector/array containing the separating distances between the LD and the WG to be evaluated
     x = np.arange(1,200,0.5)
@@ -57,6 +59,12 @@ if __name__ == '__main__':
 
     # create an empty list to store the labels of the plots for each laser
     labels = []
+
+    # activate seaborn plotting
+    sns.set()
+    sns.set_style("whitegrid")
+    # sns.set_palette()
+    # sns.set_palette(sns.color_palette("GnBu_d"))
 
     # calculate the efficiency for each laser as well
     for waveguide in waveguides:
@@ -76,12 +84,6 @@ if __name__ == '__main__':
                 n_geom[i] = calc.geometrical_losses(x[i])
 
                 n_total[i] = calc.total_efficiency(x[i])
-
-            # activate seaborn plotting
-            sns.set()
-            sns.set_style("whitegrid")
-            #sns.set_palette()
-            #sns.set_palette(sns.color_palette("GnBu_d"))
 
             # plot the total efficiency as a function of the separation distance
             plt.plot(x, n_total)

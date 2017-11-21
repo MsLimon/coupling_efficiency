@@ -1,5 +1,9 @@
 import efficiency as ef
 import numpy as np
+import numpy.random as rnd
+import matplotlib.pyplot as plt
+import seaborn as sns
+from matplotlib.patches import Ellipse
 
 
 if __name__ == '__main__':
@@ -41,18 +45,46 @@ if __name__ == '__main__':
     laser2 = ef.LaserDiode(980,13,30)
     # 650nm Red Laser Diode Chips for DVD
     laser3 = ef.LaserDiode(655,8,28)
+    # communications laser 1550nm wavelength
+    laser4 = ef.LaserDiode(1550, 9, 28)
+
+    # make a list of the lasers so that we can iterate over them
+    lasers = [laser1, laser2, laser3, laser4]
+    # pick laser by index on the laser list
+    chosen_laser = lasers[3]
 
 
-    print(f"Laser diode's power distribution coefficients: L = {laser1.l_coefficient} and T = {laser1.t_coefficient}")
+    print(f"Laser diode's power distribution coefficients: L = {chosen_laser.l_coefficient} and T = {chosen_laser.t_coefficient}")
 
     # now we make an instance of the efficiency calculator. That is, we bring together the information of the laser
     # diode and the waveguide, so that the program can calculate the coupling efficiency
-    calc = ef.Calculator(waveguide1,laser1)
+    calc = ef.Calculator(waveguide1,chosen_laser)
 
     # once we have the calculator instance we can calculate the coupling efficiency
-    x = 20
-    wo_s, wo_f = laser1.calculate_beam_width(x)
+    x = 5
+    wo_s, wo_f = chosen_laser.calculate_beam_width(x)
     print(f"Laser diode spot size at x = {x}: {wo_s} um * {wo_f} um ")
+
+    # activate seaborn plotting
+    sns.set()
+    sns.set_style("whitegrid")
+
+    # plot the ellipse at the distance x to inspect the shape of the laser diode profile
+    plt.figure()
+    ax = plt.gca()
+    # ax.set_xlim([-wo_s, wo_s])
+    # ax.set_ylim([-wo_f, wo_f])
+    ax.set_xlim([-10, 10])
+    ax.set_ylim([-10, 10])
+    plt.xlabel('x / um')
+    plt.ylabel('y / um')
+
+    # ellipse = Ellipse(xy=(0, 0), width=wo_s, height=wo_f,
+    #                   edgecolor='b', fc='None', lw=2)
+    ellipse = Ellipse(xy=(0, 0), width=wo_s, height=wo_f,
+                      fc='None')
+    ax.add_patch(ellipse)
+    ellipse.set_facecolor(rnd.rand(3))
 
     n_geom = calc.geometrical_losses(x)
     n_fresnel = calc.fresnel_losses()
@@ -64,3 +96,5 @@ if __name__ == '__main__':
     print(f"The Fresnel factor for coupling efficiency is: {n_fresnel}")
     print(f"The angular factor for coupling efficiency is: {n_angular}")
     print(f"The total coupling efficiency at x = {x} is: {n_total}")
+
+    plt.show()
