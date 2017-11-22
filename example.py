@@ -16,13 +16,20 @@ if __name__ == '__main__':
     # core_thickness: thickness of the core layer. Units: um
     # clad_thickness: thickness of the cladding layer. Units: um
 
-    # we create an instance of a a waveguide with a square cross-section which is stored in the variable waveguide1 by
+    # we create an instance of a a waveguide with a square cross-section which is stored in the variable waveguide1 with
     # waveguide1 = efficiency.SquaredWaveguide(n_core, n_clad, core_thickness, clad_thickness)
 
-    #Here: a waveguide with core material AF32 glass (n=1.51) and cladding material SiO2 (n=1.465)
-    waveguide1 = ef.SquaredWaveguide(1.51,1.465,50,1)
-    waveguide2 = ef.SquaredWaveguide(1.51,1.465,30,1)
-    theta_deg = np.rad2deg(waveguide1.theta)
+    # Here: a waveguide with core material AF32 glass (n=1.51) and cladding material SiO2 (n=1.465)
+    waveguide1 = ef.SquaredWaveguide(1.51, 1.465, 50, 1)
+    waveguide2 = ef.SquaredWaveguide(1.51, 1.465, 30, 1)
+
+    # make a list of the lasers so that we can iterate over them
+    waveguides = [waveguide1, waveguide2]
+    # select a waveguide
+    chosen_waveguide = waveguides[0]
+
+    # calculate the acceptance angle and print the resulting  value
+    theta_deg = np.rad2deg(chosen_waveguide.theta)
     print(f"Waveguide's acceptance angle: theta = {theta_deg} deg")
 
     # create an instance of a laser diode.
@@ -35,37 +42,55 @@ if __name__ == '__main__':
     # width: width of the emitting surface. Units: um
     # height: height of the emitting surface. Units: um
 
-    # we create an instance of a laser diode which is stored in the variable laser1 by
+    # we create an instance of a laser diode which is stored in the variable laser1 with
     # laser1 = efficiency.LaserDiode(lda, fwhm_slow, fwhm_fast, width, height)
 
     # Here: GNx blue laser diode
     # laser1 = ef.LaserDiode(405,9,26,2,0.4)
     laser1 = ef.LaserDiode(405, 9, 26)
     # CHIP-980-P50 infrared
-    laser2 = ef.LaserDiode(980,13,30)
+    laser2 = ef.LaserDiode(980, 13, 30)
     # 650nm Red Laser Diode Chips for DVD
-    laser3 = ef.LaserDiode(655,8,28)
+    laser3 = ef.LaserDiode(655, 8, 28)
     # communications laser 1550nm wavelength
     laser4 = ef.LaserDiode(1550, 9, 28)
 
     # make a list of the lasers so that we can iterate over them
     lasers = [laser1, laser2, laser3, laser4]
     # pick laser by index on the laser list
-    chosen_laser = lasers[3]
-
+    chosen_laser = lasers[0]
 
     print(f"Laser diode's power distribution coefficients: L = {chosen_laser.l_coefficient} and T = {chosen_laser.t_coefficient}")
 
-    # now we make an instance of the efficiency calculator. That is, we bring together the information of the laser
+    # make an instance of the efficiency calculator. That is, we bring together the information of the laser
     # diode and the waveguide, so that the program can calculate the coupling efficiency
-    calc = ef.Calculator(waveguide1,chosen_laser)
+    calc = ef.Calculator(chosen_waveguide, chosen_laser)
 
     # once we have the calculator instance we can calculate the coupling efficiency
+    # first, we select the separation distance
     x = 5
+    # calculate efficiency factors
+    n_geom = calc.geometrical_losses(x)
+    n_fresnel = calc.fresnel_losses()
+    n_angular = calc.angular_losses()
+    # calculate total efficiency
+    n_total = calc.total_efficiency(x)
+
+    # print the results
+    print(f"The geometrical factor for coupling efficiency is: {n_geom} for a separation of x = {x} um")
+    print(f"The Fresnel factor for coupling efficiency is: {n_fresnel}")
+    print(f"The angular factor for coupling efficiency is: {n_angular}")
+    print(f"The total coupling efficiency at x = {x} is: {n_total}")
+
+    # Besides calculating the total efficiency, we would like to get an idea of the size of the light spot on the
+    # input surface of the waveguide. To do that, we first calculate and print this values and then we make a plot of
+    # the corresponding ellipse.
+
+    # calculate the values of the beam half width at a distance x and print the values
     wo_s, wo_f = chosen_laser.calculate_beam_width(x)
     print(f"Laser diode spot size at x = {x}: {wo_s} um * {wo_f} um ")
 
-    # activate seaborn plotting
+    # activate seaborn plotting (nicer plots)
     sns.set()
     sns.set_style("whitegrid")
 
@@ -85,16 +110,5 @@ if __name__ == '__main__':
                       fc='None')
     ax.add_patch(ellipse)
     ellipse.set_facecolor(rnd.rand(3))
-
-    n_geom = calc.geometrical_losses(x)
-    n_fresnel = calc.fresnel_losses()
-    n_angular = calc.angular_losses()
-    n_total = calc.total_efficiency(x)
-
-    # print the results
-    print(f"The geometrical factor for coupling efficiency is: {n_geom} for a separation of x = {x} um")
-    print(f"The Fresnel factor for coupling efficiency is: {n_fresnel}")
-    print(f"The angular factor for coupling efficiency is: {n_angular}")
-    print(f"The total coupling efficiency at x = {x} is: {n_total}")
 
     plt.show()
