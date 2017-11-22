@@ -60,8 +60,8 @@ if __name__ == '__main__':
     # pick laser by index on the laser list
     chosen_laser = lasers[0]
 
-    print(f"Laser diode's power distribution coefficients: L = {chosen_laser.l_coefficient} and T = {chosen_laser.t_coefficient}")
-
+    print(f"Laser diode's power distribution coefficients: L = {chosen_laser.l_coefficient}"
+          f"and T = {chosen_laser.t_coefficient}")
     # make an instance of the efficiency calculator. That is, we bring together the information of the laser
     # diode and the waveguide, so that the program can calculate the coupling efficiency
     calc = ef.Calculator(chosen_waveguide, chosen_laser)
