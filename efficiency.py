@@ -1,4 +1,4 @@
-# Script to calculate coupling efficiency
+# Definitions to calculate coupling efficiency
 import numpy as np
 
 
