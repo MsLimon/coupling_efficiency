@@ -58,7 +58,7 @@ if __name__ == '__main__':
     # make a list of the lasers so that we can iterate over them
     lasers = [laser1, laser2, laser3, laser4]
     # pick laser by index on the laser list
-    chosen_laser = lasers[0]
+    chosen_laser = lasers[3]
 
     print(f"Laser diode's power distribution coefficients: L = {chosen_laser.l_coefficient}"
           f"and T = {chosen_laser.t_coefficient}")

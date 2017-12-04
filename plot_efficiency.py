@@ -54,13 +54,13 @@ if __name__ == '__main__':
     x = np.arange(1, 200, 0.5)
     n = len(x)
 
-    # create an empty list to store the labels of the plots for each laser-waveguide combination
-    labels = []
-
     # activate seaborn plotting
     sns.set()
     sns.set_style("whitegrid")
     # sns.set_palette(sns.color_palette("GnBu_d"))
+        
+    # create an empty list to store the legend labels of the plots for each laser-waveguide combination
+    labels = []
 
     # calculate the efficiency for each laser-waveguide combination
     for waveguide in waveguides:
