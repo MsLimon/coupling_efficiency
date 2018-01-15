@@ -92,7 +92,7 @@ class LaserDiode(object):
         # change the unit of the fwhm angle from deg to rad
         fwhm_rad = np.deg2rad(fwhm)
         # calculate half divergence angle
-        theta = (np.sqrt(2) * fwhm_rad) / (2 * np.log(2))
+        theta = (np.sqrt(2) * fwhm_rad) / (2 * np.sqrt(np.log(2)))
         # change lambda from nm to um
         lda_um = self.lda * 1e-3
         # derive the other two parameters
